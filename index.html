@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人类与AI的关系：主仆模式 VS 共生模式 - 辩论赛计时系统</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>人类与AI的关系：主仆模式 VS 共生模式</h1>
+            <div class="total-time">
+                <span>总用时：</span>
+                <span id="totalTime" class="time-display">00:00</span>
+            </div>
+        </header>
+
+        <!-- Top Progress Bar -->
+        <div class="top-progress-bar">
+            <div class="progress-stage" data-stage="1">
+                <div class="progress-dot"></div>
+                <div class="progress-label">开篇立论</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-stage" data-stage="2">
+                <div class="progress-dot"></div>
+                <div class="progress-label">攻辩/申论</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-stage" data-stage="3">
+                <div class="progress-dot"></div>
+                <div class="progress-label">自由辩论</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-stage" data-stage="4">
+                <div class="progress-dot"></div>
+                <div class="progress-label">总结陈词</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-stage" data-stage="5">
+                <div class="progress-dot"></div>
+                <div class="progress-label">互动环节</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-stage" data-stage="6">
+                <div class="progress-dot"></div>
+                <div class="progress-label">评委点评</div>
+            </div>
+        </div>
+
+        <main>
+            <div class="main-content">
+                <!-- Left Section: Timer and Controls -->
+                <div class="left-section">
+                    <!-- Timer Display -->
+                    <div class="timer-section">
+                        <!-- Single Timer (for most stages) -->
+                        <div id="singleTimer" class="timer-display-large">
+                            <div class="timer-label" id="stageName">第一阶段：开篇立论</div>
+                            <div class="substage-name" id="substageName">正方一辩立论</div>
+                            <div id="currentTime" class="time-large">03:00</div>
+                            <div class="timer-progress">
+                                <div id="progressBar" class="progress-fill"></div>
+                            </div>
+                        </div>
+
+                        <!-- Dual Timer (for free debate) -->
+                        <div id="dualTimer" class="dual-timer-container" style="display: none;">
+                            <div class="dual-timer-header">
+                                <div class="timer-label" id="stageName2">第三阶段：自由辩论</div>
+                                <button id="switchSideBtn" class="btn btn-warning btn-switch">
+                                    <span class="btn-icon">⇄</span>
+                                    切换
+                                </button>
+                            </div>
+                            <div class="dual-timer-body">
+                                <div class="team-timer positive-side">
+                                    <div class="team-label">正方</div>
+                                    <div id="positiveTime" class="time-large">04:00</div>
+                                    <div class="timer-progress">
+                                        <div id="positiveProgress" class="progress-fill"></div>
+                                    </div>
+                                </div>
+                                <div class="team-timer negative-side">
+                                    <div class="team-label">反方</div>
+                                    <div id="negativeTime" class="time-large">04:00</div>
+                                    <div class="timer-progress">
+                                        <div id="negativeProgress" class="progress-fill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="controls">
+                        <button id="startBtn" class="btn btn-primary">
+                            <span class="btn-icon">▶</span>
+                            开始
+                        </button>
+                        <button id="pauseBtn" class="btn btn-secondary" disabled>
+                            <span class="btn-icon">⏸</span>
+                            暂停
+                        </button>
+                        <button id="resetBtn" class="btn btn-secondary">
+                            <span class="btn-icon">↻</span>
+                            重置
+                        </button>
+                        <button id="nextBtn" class="btn btn-success">
+                            <span class="btn-icon">→</span>
+                            下一环节
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Section: Stage Details -->
+                <div class="right-section">
+                    <div class="stage-details">
+                        <h3 id="stageTitle">第一阶段：开篇立论</h3>
+                        <div id="stageDetailsList" class="details-list">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
