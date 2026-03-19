@@ -256,6 +256,11 @@ main {
     opacity: 0.5;
 }
 
+.voting-qr-large.before-time {
+    filter: blur(20px);
+    opacity: 0.5;
+}
+
 .voting-timer-hint {
     margin-top: 12px;
     font-size: 1rem;

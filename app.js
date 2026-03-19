@@ -77,6 +77,7 @@ class DebateTimer {
         
         this.initializeElements();
         this.setupEventListeners();
+        this.checkVotingAvailability();
         this.updateDisplay();
     }
 
@@ -435,12 +436,22 @@ class DebateTimer {
             const remainingTime = Math.max(0, currentSubstage.duration - this.currentStageTime);
             this.votingTimeDisplay.textContent = this.formatTime(remainingTime);
             
+            // Check voting availability first (time-based restriction)
+            const votingStartTime = new Date('2026-03-28T15:30:00+08:00');
+            const now = new Date();
+            const isBeforeVotingTime = now < votingStartTime;
+            
             // Check if voting time is up and blur QR code
-            if (remainingTime <= 0) {
+            if (isBeforeVotingTime) {
+                this.votingQrCode.classList.add('before-time');
+                this.votingQrCode.classList.remove('expired');
+                this.votingHint.textContent = '投票尚未开始';
+            } else if (remainingTime <= 0) {
                 this.votingQrCode.classList.add('expired');
+                this.votingQrCode.classList.remove('before-time');
                 this.votingHint.textContent = '投票已结束';
             } else {
-                this.votingQrCode.classList.remove('expired');
+                this.votingQrCode.classList.remove('expired', 'before-time');
                 this.votingHint.textContent = '';
             }
             
@@ -658,6 +669,22 @@ class DebateTimer {
             // audio.play();
         }
     }
+
+    checkVotingAvailability() {
+        // Check if current time is after March 28, 2026 3:30 PM Beijing Time (UTC+8)
+        const votingStartTime = new Date('2026-03-28T15:30:00+08:00');
+        const now = new Date();
+        
+        // If before voting start time, blur QR code
+        if (now < votingStartTime) {
+            this.votingQrCode.classList.add('before-time');
+            if (this.votingHint) {
+                this.votingHint.textContent = '投票尚未开始';
+            }
+        } else {
+            this.votingQrCode.classList.remove('before-time');
+        }
+    }
 }
 
 // Initialize the application
@@ -665,4 +692,11 @@ let debateTimer;
 
 document.addEventListener('DOMContentLoaded', () => {
     debateTimer = new DebateTimer();
+    
+    // Check voting availability every minute
+    setInterval(() => {
+        if (debateTimer) {
+            debateTimer.checkVotingAvailability();
+        }
+    }, 60000); // Check every minute
 });
