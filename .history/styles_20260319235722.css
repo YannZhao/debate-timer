@@ -165,7 +165,8 @@ main {
     display: grid;
     grid-template-columns: 1.5fr 1fr;
     gap: 20px;
-    align-items: start;
+    align-items: center;
+    min-height: calc(100vh - 280px);
 }
 
 .left-section {
@@ -190,7 +191,7 @@ main {
     background: var(--card-bg);
     border: 3px solid var(--border-color);
     border-radius: 12px;
-    padding: 60px 40px;
+    padding: 40px;
     text-align: center;
     box-shadow: var(--shadow);
     display: flex;
@@ -318,6 +319,7 @@ main {
     border-radius: 5px;
 }
 
+/* Dual Timer for Free Debate */
 .dual-timer-container {
     background: var(--card-bg);
     border: 3px solid var(--border-color);
@@ -328,6 +330,18 @@ main {
     display: flex;
     flex-direction: column;
     justify-content: center;
+}
+
+.dual-timer-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.btn-switch {
+    padding: 8px 16px;
+    font-size: 0.9rem;
 }
 
 .dual-timer-body {
@@ -574,21 +588,6 @@ main {
     color: var(--warning-color);
     font-size: 1.05rem;
     font-weight: 700;
-}
-
-/* Free Debate Switch in Right Section */
-.free-debate-switch-container {
-    margin-top: 20px;
-}
-
-.btn-switch-large {
-    width: 100%;
-    padding: 15px 20px;
-    font-size: 1.1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
 }
 
 /* Responsive Design */

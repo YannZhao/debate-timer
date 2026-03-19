@@ -10,10 +10,6 @@
     <div class="container">
         <header>
             <h1>人类与AI的关系：主仆模式 VS 共生模式</h1>
-            <div class="total-time">
-                <span>总用时：</span>
-                <span id="totalTime" class="time-display">00:00</span>
-            </div>
         </header>
 
         <!-- Top Progress Bar -->
@@ -45,7 +41,7 @@
             <div class="progress-line"></div>
             <div class="progress-stage" data-stage="6">
                 <div class="progress-dot"></div>
-                <div class="progress-label">评委点评</div>
+                <div class="progress-label">观众投票</div>
             </div>
         </div>
 
@@ -57,34 +53,41 @@
                     <div class="timer-section">
                         <!-- Single Timer (for most stages) -->
                         <div id="singleTimer" class="timer-display-large">
-                            <div class="timer-label" id="stageName">第一阶段：开篇立论</div>
-                            <div class="substage-name" id="substageName">正方一辩立论</div>
-                            <div id="currentTime" class="time-large">03:00</div>
+                            <div id="currentTime" class="time-large" title="双击可编辑时长">03:00</div>
                             <div class="timer-progress">
                                 <div id="progressBar" class="progress-fill"></div>
                             </div>
                         </div>
 
+                        <!-- Voting Display (for voting stage) -->
+                        <div id="votingTimer" class="voting-timer-display" style="display: none;">
+                            <div class="voting-content">
+                                <div class="voting-qr-section">
+                                    <img id="votingQrCode" src="winer_voting.png" alt="投票二维码" class="voting-qr-large">
+                                    <p id="votingHint" class="voting-timer-hint"></p>
+                                </div>
+                                <div class="voting-timer-section">
+                                    <div id="votingTime" class="time-large" title="双击可编辑时长">01:30</div>
+                                    <div class="timer-progress">
+                                        <div id="votingProgressBar" class="progress-fill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Dual Timer (for free debate) -->
                         <div id="dualTimer" class="dual-timer-container" style="display: none;">
-                            <div class="dual-timer-header">
-                                <div class="timer-label" id="stageName2">第三阶段：自由辩论</div>
-                                <button id="switchSideBtn" class="btn btn-warning btn-switch">
-                                    <span class="btn-icon">⇄</span>
-                                    切换
-                                </button>
-                            </div>
                             <div class="dual-timer-body">
                                 <div class="team-timer positive-side">
                                     <div class="team-label">正方</div>
-                                    <div id="positiveTime" class="time-large">04:00</div>
+                                    <div id="positiveTime" class="time-large" title="双击可编辑时长">04:00</div>
                                     <div class="timer-progress">
                                         <div id="positiveProgress" class="progress-fill"></div>
                                     </div>
                                 </div>
                                 <div class="team-timer negative-side">
                                     <div class="team-label">反方</div>
-                                    <div id="negativeTime" class="time-large">04:00</div>
+                                    <div id="negativeTime" class="time-large" title="双击可编辑时长">04:00</div>
                                     <div class="timer-progress">
                                         <div id="negativeProgress" class="progress-fill"></div>
                                     </div>
@@ -121,6 +124,14 @@
                         <div id="stageDetailsList" class="details-list">
                             <!-- Will be populated by JavaScript -->
                         </div>
+                    </div>
+                    
+                    <!-- Free Debate Switch Button (Hidden by default) -->
+                    <div id="freeDebateSwitch" class="free-debate-switch-container" style="display: none;">
+                        <button id="switchSideBtn" class="btn btn-warning btn-switch-large">
+                            <span class="btn-icon">⇄</span>
+                            切换发言方
+                        </button>
                     </div>
                 </div>
             </div>

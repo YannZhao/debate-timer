@@ -49,11 +49,12 @@ const debateFlow = {
         },
         {
             id: 6,
-            name: '第六阶段：评委点评',
-            totalDuration: 6 * 60,
+            name: '第六阶段：观众投票',
+            totalDuration: 3 * 60,
+            isVoting: true,
             substages: [
-                { name: '评委点评', duration: 5 * 60, desc: '评委专业点评，指出优缺点' },
-                { name: '结果公布', duration: 1 * 60, desc: '公布获胜方和最佳辩手' }
+                { name: '获胜方投票', duration: 1.5 * 60, desc: '观众扫码投票支持获胜方' },
+                { name: '最佳辩手投票', duration: 1.5 * 60, desc: '观众扫码投票选出最佳辩手' }
             ]
         }
     ]
@@ -66,7 +67,6 @@ class DebateTimer {
         this.currentSubstageIndex = 0;
         this.isRunning = false;
         this.isPaused = false;
-        this.totalElapsedTime = 0;
         this.currentStageTime = 0;
         this.timerInterval = null;
         
@@ -82,23 +82,26 @@ class DebateTimer {
 
     initializeElements() {
         // Timer displays
-        this.totalTimeDisplay = document.getElementById('totalTime');
         this.currentTimeDisplay = document.getElementById('currentTime');
-        this.stageNameDisplay = document.getElementById('stageName');
-        this.stageName2Display = document.getElementById('stageName2');
-        this.substageNameDisplay = document.getElementById('substageName');
         this.stageTitle = document.getElementById('stageTitle');
         
         // Timer containers
         this.singleTimerContainer = document.getElementById('singleTimer');
         this.dualTimerContainer = document.getElementById('dualTimer');
+        this.votingTimerContainer = document.getElementById('votingTimer');
+        
+        // Voting elements
+        this.votingTimeDisplay = document.getElementById('votingTime');
+        this.votingQrCode = document.getElementById('votingQrCode');
+        this.votingProgressBar = document.getElementById('votingProgressBar');
+        this.votingHint = document.getElementById('votingHint');
         
         // Free debate elements
         this.positiveTimeDisplay = document.getElementById('positiveTime');
         this.negativeTimeDisplay = document.getElementById('negativeTime');
         this.positiveProgress = document.getElementById('positiveProgress');
         this.negativeProgress = document.getElementById('negativeProgress');
-        this.freeDebateControls = document.getElementById('freeDebateControls');
+        this.freeDebateSwitch = document.getElementById('freeDebateSwitch');
         
         // Progress bar
         this.progressBar = document.getElementById('progressBar');
@@ -127,10 +130,135 @@ class DebateTimer {
         this.progressStages.forEach((stage, index) => {
             stage.addEventListener('click', () => this.jumpToStage(index));
         });
+        
+        // Add double-click listeners for time editing
+        this.setupTimeEditListeners();
+    }
+
+    setupTimeEditListeners() {
+        // Single timer
+        this.currentTimeDisplay.addEventListener('dblclick', (e) => {
+            if (this.isRunning) return; // Don't allow editing while running
+            this.editTime(e.target, 'single');
+        });
+        
+        // Voting timer
+        this.votingTimeDisplay.addEventListener('dblclick', (e) => {
+            if (this.isRunning) return;
+            this.editTime(e.target, 'voting');
+        });
+        
+        // Free debate timers
+        this.positiveTimeDisplay.addEventListener('dblclick', (e) => {
+            if (this.isRunning) return;
+            this.editTime(e.target, 'positive');
+        });
+        
+        this.negativeTimeDisplay.addEventListener('dblclick', (e) => {
+            if (this.isRunning) return;
+            this.editTime(e.target, 'negative');
+        });
+    }
+
+    editTime(element, type) {
+        // Add editing class
+        element.classList.add('editing');
+        
+        // Get current time value
+        const currentText = element.textContent.trim();
+        
+        // Make contenteditable
+        element.contentEditable = true;
+        element.focus();
+        
+        // Select all text
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        // Handle blur (when user clicks away)
+        const handleBlur = () => {
+            element.contentEditable = false;
+            element.classList.remove('editing');
+            const newText = element.textContent.trim();
+            
+            // Parse the time (format: MM:SS or -MM:SS)
+            const timeMatch = newText.match(/^(-)?(\d+):(\d+)$/);
+            if (timeMatch) {
+                const isNegative = timeMatch[1] === '-';
+                const minutes = parseInt(timeMatch[2]);
+                const seconds = parseInt(timeMatch[3]);
+                
+                if (seconds < 60) {
+                    const totalSeconds = (isNegative ? -1 : 1) * (minutes * 60 + seconds);
+                    this.applyTimeChange(type, totalSeconds);
+                } else {
+                    element.textContent = currentText;
+                }
+            } else {
+                element.textContent = currentText;
+            }
+            
+            element.removeEventListener('blur', handleBlur);
+            element.removeEventListener('keydown', handleKeydown);
+        };
+        
+        // Handle Enter and Escape keys
+        const handleKeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                element.blur();
+            } else if (e.key === 'Escape') {
+                element.textContent = currentText;
+                element.blur();
+            }
+        };
+        
+        element.addEventListener('blur', handleBlur);
+        element.addEventListener('keydown', handleKeydown);
+    }
+
+    applyTimeChange(type, seconds) {
+        const currentStage = this.getCurrentStage();
+        const currentSubstage = this.getCurrentSubstage();
+        
+        if (type === 'single') {
+            // Update substage duration
+            currentSubstage.duration = Math.max(0, seconds);
+            this.currentStageTime = 0;
+        } else if (type === 'voting') {
+            currentSubstage.duration = Math.max(0, seconds);
+            this.currentStageTime = 0;
+        } else if (type === 'positive') {
+            this.freeDebatePositiveTime = Math.max(0, seconds);
+        } else if (type === 'negative') {
+            this.freeDebateNegativeTime = Math.max(0, seconds);
+        }
+        
+        this.updateDisplay();
     }
 
     start() {
         if (this.isRunning && !this.isPaused) return;
+        
+        const currentStage = this.getCurrentStage();
+        const currentSubstage = this.getCurrentSubstage();
+        
+        // Check if time is up
+        if (currentStage.isFreeDebate) {
+            if (this.freeDebateActiveSide === 'positive' && this.freeDebatePositiveTime <= 0) {
+                return; // Don't allow restart if positive side time is up
+            }
+            if (this.freeDebateActiveSide === 'negative' && this.freeDebateNegativeTime <= 0) {
+                return; // Don't allow restart if negative side time is up
+            }
+        } else {
+            if (this.currentStageTime >= currentSubstage.duration) {
+                return; // Don't allow restart if time is up
+            }
+        }
         
         this.isRunning = true;
         this.isPaused = false;
@@ -167,14 +295,31 @@ class DebateTimer {
         }
         
         this.updateDisplay();
+        this.updateButtonStates();
     }
 
     tick() {
-        this.totalElapsedTime++;
-        this.currentStageTime++;
-        
         const currentStage = this.getCurrentStage();
         const currentSubstage = this.getCurrentSubstage();
+        
+        // Check if time is already up before incrementing
+        if (currentStage.isFreeDebate) {
+            if (this.freeDebateActiveSide === 'positive' && this.freeDebatePositiveTime <= 0) {
+                this.pause();
+                return;
+            }
+            if (this.freeDebateActiveSide === 'negative' && this.freeDebateNegativeTime <= 0) {
+                this.pause();
+                return;
+            }
+        } else {
+            if (this.currentStageTime >= currentSubstage.duration) {
+                this.pause();
+                return;
+            }
+        }
+        
+        this.currentStageTime++;
         
         if (currentStage.isFreeDebate) {
             // Free debate timing
@@ -225,7 +370,6 @@ class DebateTimer {
         }
         
         this.reset();
-        this.updateDisplay();
     }
 
     jumpToStage(stageIndex) {
@@ -258,9 +402,6 @@ class DebateTimer {
         const currentStage = this.getCurrentStage();
         const currentSubstage = this.getCurrentSubstage();
         
-        // Update total time
-        this.totalTimeDisplay.textContent = this.formatTime(this.totalElapsedTime);
-        
         // Update stage title in right panel
         this.stageTitle.textContent = currentStage.name;
         
@@ -275,12 +416,46 @@ class DebateTimer {
         });
         
         // Update timer display
-        if (currentStage.isFreeDebate) {
+        if (currentStage.isVoting) {
+            // Voting stage
+            this.singleTimerContainer.style.display = 'none';
+            this.dualTimerContainer.style.display = 'none';
+            this.votingTimerContainer.style.display = 'block';
+            this.freeDebateSwitch.style.display = 'none';
+            
+            // Update QR code based on substage
+            if (this.currentSubstageIndex === 0) {
+                this.votingQrCode.src = 'winer_voting.png';
+                this.votingQrCode.alt = '获胜方投票二维码';
+            } else {
+                this.votingQrCode.src = 'best_debater.png';
+                this.votingQrCode.alt = '最佳辩手投票二维码';
+            }
+            
+            const remainingTime = Math.max(0, currentSubstage.duration - this.currentStageTime);
+            this.votingTimeDisplay.textContent = this.formatTime(remainingTime);
+            
+            // Check if voting time is up and blur QR code
+            if (remainingTime <= 0) {
+                this.votingQrCode.classList.add('expired');
+                this.votingHint.textContent = '投票已结束';
+            } else {
+                this.votingQrCode.classList.remove('expired');
+                this.votingHint.textContent = '';
+            }
+            
+            // Update progress bar
+            const progress = (this.currentStageTime / currentSubstage.duration) * 100;
+            this.votingProgressBar.style.width = `${Math.min(progress, 100)}%`;
+            
+            // Warning colors
+            this.updateWarningColors(this.votingTimerContainer, remainingTime, currentSubstage.duration);
+        } else if (currentStage.isFreeDebate) {
+            // Free debate stage
             this.singleTimerContainer.style.display = 'none';
             this.dualTimerContainer.style.display = 'block';
-            
-            // Update stage name for dual timer
-            this.stageName2Display.textContent = currentStage.name;
+            this.votingTimerContainer.style.display = 'none';
+            this.freeDebateSwitch.style.display = 'block';
             
             this.positiveTimeDisplay.textContent = this.formatTime(this.freeDebatePositiveTime);
             this.negativeTimeDisplay.textContent = this.formatTime(this.freeDebateNegativeTime);
@@ -304,14 +479,13 @@ class DebateTimer {
             this.updateWarningColors(positiveTimer, this.freeDebatePositiveTime, totalTime);
             this.updateWarningColors(negativeTimer, this.freeDebateNegativeTime, totalTime);
         } else {
+            // Regular stages
             this.singleTimerContainer.style.display = 'block';
             this.dualTimerContainer.style.display = 'none';
+            this.votingTimerContainer.style.display = 'none';
+            this.freeDebateSwitch.style.display = 'none';
             
-            // Update stage and substage names
-            this.stageNameDisplay.textContent = currentStage.name;
-            this.substageNameDisplay.textContent = currentSubstage.name;
-            
-            const remainingTime = currentSubstage.duration - this.currentStageTime;
+            const remainingTime = Math.max(0, currentSubstage.duration - this.currentStageTime);
             this.currentTimeDisplay.textContent = this.formatTime(remainingTime);
             
             // Update progress bar
@@ -324,6 +498,34 @@ class DebateTimer {
         
         // Update stage details
         this.updateStageDetails();
+        
+        // Update button states based on time remaining
+        this.updateButtonStates();
+    }
+
+    updateButtonStates() {
+        const currentStage = this.getCurrentStage();
+        const currentSubstage = this.getCurrentSubstage();
+        
+        // Check if time is up
+        let timeIsUp = false;
+        
+        if (currentStage.isFreeDebate) {
+            if (this.freeDebateActiveSide === 'positive') {
+                timeIsUp = this.freeDebatePositiveTime <= 0;
+            } else {
+                timeIsUp = this.freeDebateNegativeTime <= 0;
+            }
+        } else {
+            timeIsUp = this.currentStageTime >= currentSubstage.duration;
+        }
+        
+        // Disable start button if time is up and not running
+        if (timeIsUp && !this.isRunning) {
+            this.startBtn.disabled = true;
+        } else if (!this.isRunning) {
+            this.startBtn.disabled = false;
+        }
     }
 
     updateWarningColors(element, remainingTime, totalTime) {
@@ -369,11 +571,82 @@ class DebateTimer {
             const duration = document.createElement('span');
             duration.className = 'detail-duration';
             duration.textContent = this.formatTime(substage.duration);
+            duration.title = '双击可编辑时长';
+            duration.style.cursor = 'pointer';
+            
+            // Add double-click listener for duration editing
+            duration.addEventListener('dblclick', (e) => {
+                if (this.isRunning) return;
+                this.editSubstageDuration(e.target, substage);
+            });
             
             item.appendChild(contentDiv);
             item.appendChild(duration);
             this.stageDetailsList.appendChild(item);
         });
+    }
+
+    editSubstageDuration(element, substage) {
+        const currentText = element.textContent.trim();
+        
+        element.contentEditable = true;
+        element.focus();
+        element.style.outline = '2px solid var(--secondary-color)';
+        element.style.outlineOffset = '2px';
+        element.style.borderRadius = '4px';
+        element.style.padding = '2px 4px';
+        element.style.background = 'rgba(52, 152, 219, 0.05)';
+        
+        // Select all text
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        const handleBlur = () => {
+            element.contentEditable = false;
+            element.style.outline = '';
+            element.style.outlineOffset = '';
+            element.style.borderRadius = '';
+            element.style.padding = '';
+            element.style.background = '';
+            
+            const newText = element.textContent.trim();
+            const timeMatch = newText.match(/^(-)?(\d+):(\d+)$/);
+            
+            if (timeMatch) {
+                const isNegative = timeMatch[1] === '-';
+                const minutes = parseInt(timeMatch[2]);
+                const seconds = parseInt(timeMatch[3]);
+                
+                if (seconds < 60) {
+                    const totalSeconds = (isNegative ? -1 : 1) * (minutes * 60 + seconds);
+                    substage.duration = Math.max(0, totalSeconds);
+                    element.textContent = this.formatTime(substage.duration);
+                } else {
+                    element.textContent = currentText;
+                }
+            } else {
+                element.textContent = currentText;
+            }
+            
+            element.removeEventListener('blur', handleBlur);
+            element.removeEventListener('keydown', handleKeydown);
+        };
+        
+        const handleKeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                element.blur();
+            } else if (e.key === 'Escape') {
+                element.textContent = currentText;
+                element.blur();
+            }
+        };
+        
+        element.addEventListener('blur', handleBlur);
+        element.addEventListener('keydown', handleKeydown);
     }
 
     playAlert() {
